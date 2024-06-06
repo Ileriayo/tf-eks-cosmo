@@ -28,6 +28,17 @@ module "eks" {
     instance_types = ["m6i.large", "m5.large", "m5n.large", "m5zn.large"]
   }
 
+  node_security_group_additional_rules = {
+    ingress_to_nodeport = {
+      description = "From the internet to the Cluster NodePort"
+      protocol    = "tcp"
+      from_port   = 32654
+      to_port     = 32654
+      type        = "ingress"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
   eks_managed_node_groups = {
     example = {
       min_size     = 1
