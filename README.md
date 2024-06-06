@@ -1,45 +1,82 @@
 # Cosmo Router - Infrastructure Setup
 
 ## Setup
-1. Initialize terraform in the root directory
-```sh
-terraform init
-```
+1. Clone the repo and initialize terraform in the root directory
+    ```sh
+    terraform init
+    ```
 
 2. Login to the Wundergraph UI and generate an API key. Once done, set it as an environment variable
-```sh
-export COSMO_API_KEY="cosmo_e04a4977ff9ba563e6e308d64ec1b47b"
-```
+    ```sh
+    export COSMO_API_KEY="cosmo_e04a4977ff9ba563e6e308d64ec1b47b"
+    ```
 
 3. Create a federated graph
-```sh
-npx wgc federated-graph create my-graph --namespace default --label-matcher team=A --routing-url http://localhost:3002/graphql
-```
+    ```sh
+    npx wgc federated-graph create my-graph --namespace default --label-matcher team=A --routing-url http://localhost:3002/graphql
+    ```
 
 4. Create a subgraph
-```sh
-npx wgc subgraph publish my-subgraph --namespace default --schema schema.graphql --label team=A --routing-url http://localhost:3002/graphql
-```
+    ```sh
+    npx wgc subgraph publish my-subgraph --namespace default --schema schema.graphql --label team=A --routing-url http://localhost:3002/graphql
+    ```
 
 5. Then generate the graph api auth token
-```sh
-npx wgc router token create my-token -n default -g my-graph
-```
+    ```sh
+    npx wgc router token create my-token -n default -g my-graph
+    ```
 
-`Note`: A token will be displayed to stdout. Store it somewhere!
+    `Note`: A token will be displayed to stdout. Store it somewhere!
 
-5. Create a `helm/values.yaml` file from the `helm/values.yaml.example` file. Then set the auth token here
-```yaml
-configuration:
-  # -- The router token is used to authenticate the router against the controlplane (required)
-  graphApiToken: "replace-me"
-```
+6. Create a `helm/values.yaml` file from the `helm/values.yaml.example` file. Then set the auth token here
+    ```yaml
+    configuration:
+      # -- The router token is used to authenticate the router against the controlplane (required)
+      graphApiToken: "<replace-me>"
+    ```
 
-2. Apply the terraform code to create a VPC, an EKS Cluster, generate a kubconfig and install the Cosmo stack onto the Cluster
-```
-terraform apply
-```
+7. Apply the terraform code to create a VPC, an EKS Cluster, generate a kubconfig and install the Cosmo stack onto the Cluster
+    ```
+    terraform apply
+    ```
 
+    After running the above, a `kubeconfig` file will be created at the root of the repo with an ephemeral (short-lived) token. Thus, you might run into the issue where `terraform apply` fails because of an expired token. You can fix this by replacing the `token` field
+
+    ```
+    - "name": "terraform"
+      "user":
+        "token": "k8s-aws-v1.aHR0cHM6Ly9zdHMudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vP0FjdGlvbj1HZXRDYWxsZXJJZGVudGl0eSZWZXJzaW9uPTIwMTEtMDYtMTUmWC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBNk9EVTNVVkpJNUlPUVBGUSUyRjIwMjQwNjA2JTJGdXMtZWFzdC0xJTJGc3RzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA2MDZUMDgyNzQwWiZYLUFtei1FeHBpcmVzPTAmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JTNCeC1rOHMtYXdzLWlkJlgtQW16LVNpZ25hdHVyZT1iOWE2NDQ3NTdhYmUwODEzOGI2ODg4NjIwYzU4YmRiNjQ2N2ZmZThiYWNjYjRmZTUxNGYxZDYzNGJiMDIzYThk"
+    ```
+
+    with an `exec` block for example:
+    ```
+    - "name": "terraform"
+      "user":
+        exec:
+            apiVersion: client.authentication.k8s.io/v1beta1
+            args:
+              - '--region'
+              - us-east-1
+              - eks
+              - get-token
+              - '--cluster-name'
+              - cosmos-router
+              - '--output'
+              - json
+            command: aws
+            env:
+              - name: AWS_PROFILE
+                value: tga
+    ```
+    This `exec` block can be retrieved from your local kubeconfig (kubectl config view), after having updated it using:
+    ```
+    aws eks update-kubeconfig --region us-east-1 --name cosmos-router --profile tga
+    ```
+
+8. You can access the router using the K8s Node IP and NodePort:
+    ```
+    http://<Node-IP>:<NodePort>
+    ```
 
 ## Infra Architecture
 This codebase consists of terraform scripts that provisions an EKS Cluster, and uses the helm provider to install the Cosmo Stack onto a Kubernetes Cluster.
@@ -52,12 +89,9 @@ This codebase consists of terraform scripts that provisions an EKS Cluster, and 
 -- contains another module to generate the kubeconfig file, and then the file is stored locally using the `local_file` resource     
 -- creates a helm release (using the generated kubeconfig file to authenticate to the cluster)  
 
-Note: The helm chart used in the codebase was gotten from `https://artifacthub.io/packages/helm/cosmo-platform/cosmo`
 
 ## Future plans
 1. Use a remote backend for terraform state management
-2. Deploy the infrastructure in the AWS region closest to the customers
-2. Follow the setup for production deployments on Cosmo docs
-
-## Troubleshooting
-- The postgres pod failed to start and was stuck in a pending state, and thus other components like the controlplane coould not connect to the database and kept crashing
+2. Find a better solution to manage the ephemeral kubeconfig token
+3. Deploy the infrastructure in the AWS region closest to the customers
+4. Follow the setup for production deployments on Cosmo docs
