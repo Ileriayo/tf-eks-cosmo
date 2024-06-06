@@ -72,5 +72,10 @@ resource "helm_release" "cosmo" {
   chart      = "router"
   version    = "0.4.0"
   repository = "oci://ghcr.io/wundergraph/cosmo/helm-charts"
+
+  values = [
+    "${file("helm/values.yaml")}"
+  ]
+
   depends_on = [local_file.kubeconfig]
 }

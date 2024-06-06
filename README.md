@@ -2,14 +2,39 @@
 
 ## Setup
 1. Initialize terraform in the root directory
-```
+```sh
 terraform init
+```
+
+2. Login to the Wundergraph UI and generate an API key. Once done, set it as an environment variable
+```sh
+export COSMO_API_KEY="cosmo_xxxxxyyyyyzzzz"
+```
+
+3. Create a federated graph
+```sh
+npx wgc federated-graph create production --namespace default --label-matcher team=A --routing-url http://localhost:3002/graphql
+```
+
+4. Then create a token for the federated graph
+```sh
+npx wgc router token create my-token -g production
+```
+
+A token will be generated. Copy it!
+
+5. Set this token in the `helm/values.yaml` file
+```yaml
+configuration:
+  # -- The router token is used to authenticate the router against the controlplane (required)
+  graphApiToken: "replace-me"
 ```
 
 2. Apply the terraform code to create a VPC, an EKS Cluster, generate a kubconfig and install the Cosmo stack onto the Cluster
 ```
 terraform apply
 ```
+
 
 ## Infra Architecture
 This codebase consists of terraform scripts that provisions an EKS Cluster, and uses the helm provider to install the Cosmo Stack onto a Kubernetes Cluster.
