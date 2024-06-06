@@ -8,22 +8,27 @@ terraform init
 
 2. Login to the Wundergraph UI and generate an API key. Once done, set it as an environment variable
 ```sh
-export COSMO_API_KEY="cosmo_xxxxxyyyyyzzzz"
+export COSMO_API_KEY="cosmo_e04a4977ff9ba563e6e308d64ec1b47b"
 ```
 
 3. Create a federated graph
 ```sh
-npx wgc federated-graph create production --namespace default --label-matcher team=A --routing-url http://localhost:3002/graphql
+npx wgc federated-graph create my-graph --namespace default --label-matcher team=A --routing-url http://localhost:3002/graphql
 ```
 
-4. Then create a token for the federated graph
+4. Create a subgraph
 ```sh
-npx wgc router token create my-token -g production
+npx wgc subgraph publish my-subgraph --namespace default --schema schema.graphql --label team=A --routing-url http://localhost:3002/graphql
 ```
 
-A token will be generated. Copy it!
+5. Then generate the graph api auth token
+```sh
+npx wgc router token create my-token -n default -g production
+```
 
-5. Set this token in the `helm/values.yaml` file
+`Note`: A token will be displayed to stdout. Store it somewhere!
+
+5. Create a `helm/values.yaml` file from the `helm/values.yaml.example` file. Then set the auth token here
 ```yaml
 configuration:
   # -- The router token is used to authenticate the router against the controlplane (required)
