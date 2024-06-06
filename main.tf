@@ -17,6 +17,9 @@ module "eks" {
     vpc-cni = {
       most_recent = true
     }
+    # aws-ebs-csi-driver = {
+    #   most_recent = true
+    # }
   }
 
   vpc_id                   = module.vpc.vpc_id
@@ -38,6 +41,10 @@ module "eks" {
       capacity_type  = "SPOT"
     }
   }
+  # iam_role_additional_policies = {
+  #   AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  # }
+  # iam_role_use_name_prefix = false
 
   enable_cluster_creator_admin_permissions = true
 
@@ -61,9 +68,9 @@ resource "local_file" "kubeconfig" {
 }
 
 resource "helm_release" "cosmo" {
-  name  = "cosmo"
-  chart = "./helm/cosmo"
-  timeout = 6000
-
+  name       = "cosmo"
+  chart      = "router"
+  version    = "0.4.0"
+  repository = "oci://ghcr.io/wundergraph/cosmo/helm-charts"
   depends_on = [local_file.kubeconfig]
 }
