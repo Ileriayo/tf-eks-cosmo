@@ -30,10 +30,10 @@ module "eks" {
 
   node_security_group_additional_rules = {
     ingress_to_nodeport = {
-      description = "From the internet to the Cluster NodePort"
+      description = "From the internet to the cluster NodePort range"
       protocol    = "tcp"
-      from_port   = 32654
-      to_port     = 32654
+      from_port   = 30000
+      to_port     = 32767
       type        = "ingress"
       cidr_blocks = ["0.0.0.0/0"]
     }
