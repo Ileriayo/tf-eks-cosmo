@@ -23,7 +23,7 @@ npx wgc subgraph publish my-subgraph --namespace default --schema schema.graphql
 
 5. Then generate the graph api auth token
 ```sh
-npx wgc router token create my-token -n default -g production
+npx wgc router token create my-token -n default -g my-graph
 ```
 
 `Note`: A token will be displayed to stdout. Store it somewhere!
